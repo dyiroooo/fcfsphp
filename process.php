@@ -24,7 +24,7 @@ if (isset($_POST["number"])) {
 
 <body>
     <form>
-        <table class="table table-bordered">
+        <table class="table table-bordered" id="fcfstable">
             <thead>
                 <tr>
                     <th>Process ID</th>
@@ -64,9 +64,11 @@ if (isset($_POST["number"])) {
                 </tr>
             </tbody>
         </table>
-        <button class="btn btn-primary form-control" id="computeButton">Compute</input>
+        <button class="btn btn-primary form-control" id="computeButton">Compute</button>
     </form>
-    <button class="btn btn-danger " onclick="goBack()"> Back </input>
+    <input type="text" id="printAT"></input>
+    <button class="btn btn-danger" id="goBack" onclick="goBack()"> Back </button>
+    <button class="btn btn-success" id="gantchart"> Generate </button>
 </body>
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"></script>
@@ -115,19 +117,82 @@ if (isset($_POST["number"])) {
                 url: 'compute.php',
                 data: {
                     payload: JSON.stringify(payload)
-                }, // Removed the extra payload object wrapping
+                },
                 success: function(response) {
-                    console.log(JSON.parse(response));
+                    // Kunin yung resposne from PHP
+                    const load = JSON.parse(response);
+                    // Extract yung object isa-isa
+                    const artime = load.atime;
+                    const btime = load.btime;
+                    const pid = load.processId;
+                    const row = load.row;
+
+                    // arrival time
+                    var arr1 = Object.values(artime).map(function(value) {
+                        return [value];
+                    });
+
+                    // process ids
+                    var ids = Object.values(pid).map(function(value) {
+                        return [value];
+                    });
+                    // burst time 
+                    var bt = Object.values(btime).map(function(value) {
+                        return [value];
+                    });
+
+                    // var sortedAT = arr1.sort();
+                    // console.log(sortedAT)
+
+                    // For Completion, Turnaround, Waiting Time Results
+                    var totalct = []; // Initialize totalsum array
+                    var totaltat = [];
+                    var totalwt = [];
+
+                    for (var i = 0; i < row; i++) {
+                        var currentCompletionTime = parseInt(arr1[i]) + parseInt(bt[i]);
+                        var currentTATime = currentCompletionTime - parseInt(arr1[i]);
+                        var currentWTime = currentCompletionTime - parseInt(bt[i]);
+
+                        totalct.push(currentCompletionTime);
+                        totaltat.push(currentTATime);
+                        totalwt.push(currentWTime);
+
+                        $("input[name='completion_time[" + (i + 1) + "]']").val(currentCompletionTime).show();
+                        $("input[name='turnaround_time[" + (i + 1) + "]']").val(currentTATime).show();
+                        $("input[name='waiting_time[" + (i + 1) + "]']").val(currentWTime).show();
+
+                        for (var j = i + 1; j < bt.length; j++) {
+                            currentCompletionTime += parseInt(bt[j]);
+                            currentTATime = currentCompletionTime - parseInt(arr1[j]);
+                            currentWTime = currentCompletionTime - parseInt(bt[j]);
+
+                            totalct.push(currentCompletionTime);
+                            totaltat.push(currentTATime);
+                            totalwt.push(currentWTime);
+
+                            $("input[name='completion_time[" + (j + 1) + "]']").val(currentCompletionTime).show();
+                            $("input[name='turnaround_time[" + (j + 1) + "]']").val(currentTATime).show();
+                            $("input[name='waiting_time[" + (j + 1) + "]']").val(currentTATime).show();
+
+
+                        }
+                        break;
+                    }
                 },
             });
 
-            
+
         });
+
+
+        $('#goBack').click(function(e) {
+            window.location.href = "fcfs.php";
+        });
+
+        $('#gantchart').click(function(e) {
+            e.preventDefault();
+            // di ko pa nagagawa
+        })
     });
-
-
-
-    function goBack() {
-        window.location.href = "fcfs.php";
-    }
 </script>
